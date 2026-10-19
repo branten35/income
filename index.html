@@ -3,134 +3,176 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>Дневник дохода</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --bg: var(--tg-theme-secondary-bg-color, #efeff4);
-    --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #ffffff));
-    --text: var(--tg-theme-text-color, #000000);
-    --hint: var(--tg-theme-hint-color, #8e8e93);
-    --accent: var(--tg-theme-accent-text-color, var(--tg-theme-button-color, #2481cc));
-    --btn: var(--tg-theme-button-color, #2481cc);
-    --btn-text: var(--tg-theme-button-text-color, #ffffff);
-    --danger: var(--tg-theme-destructive-text-color, #e53935);
-    --sep: color-mix(in srgb, var(--hint) 22%, transparent);
-    --soft: color-mix(in srgb, var(--accent) 12%, transparent);
-    --radius: 14px;
+    --bg: #0d0e12;
+    --card: #16181d;
+    --card2: #1d2026;
+    --line: #23252b;
+    --text: #f4f1ea;
+    --soft: #b9b6ad;
+    --muted: #8b8a85;
+    --faint: #5b5e66;
+    --gold: #e2b85c;
+    --gold-ink: #1a1406;
+    --gold-soft: rgba(226, 184, 92, .14);
+    --up: #7ee2a8;
+    --down: #ff8a7a;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
     font: 16px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
-  body { padding: 10px 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  body { padding: 12px 16px calc(100px + env(safe-area-inset-bottom, 0px)); min-height: 100vh; }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
   .num { font-variant-numeric: tabular-nums; }
+  [hidden] { display: none !important; }
 
-  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--sep);
-    border-radius: 10px; padding: 2px; gap: 2px; }
-  .seg button { padding: 7px 4px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--text); }
-  .seg button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-  .seg.small button { padding: 5px 4px; font-size: 13px; }
+  /* шапка */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tabs { display: flex; gap: 18px; }
+  .tabs button { color: var(--muted); font-size: 15px; padding: 6px 0 5px; border-bottom: 2px solid transparent; }
+  .tabs button[aria-pressed="true"] { color: var(--text); font-weight: 600; border-bottom-color: var(--gold); }
+  .arrows { display: flex; gap: 4px; }
+  .arrows button { width: 36px; height: 36px; border-radius: 12px; color: var(--soft); font-size: 20px; display: grid; place-items: center; }
+  .arrows button:active { background: var(--card); }
 
-  .nav { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 6px; gap: 8px; }
-  .nav .arrow { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--accent); font-size: 22px; }
-  .nav .arrow:active { background: var(--soft); }
-  .nav .label { flex: 1; text-align: center; font-weight: 600; font-size: 17px; position: relative; }
-  .nav .label input { position: absolute; inset: 0; opacity: 0; width: 100%; }
-  .nav .label small { display: block; font-weight: 400; font-size: 13px; color: var(--hint); }
-  .period { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 6px; }
-  .period label { font-size: 12px; color: var(--hint); display: grid; gap: 4px; }
-  input[type=date], input[type=text] { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--sep);
-    border-radius: 10px; padding: 10px 12px; width: 100%; min-height: 44px; }
+  /* крупный итог */
+  .hero { margin-top: 22px; }
+  .label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; }
+  .label { color: var(--muted); font-size: 13px; letter-spacing: .6px; text-transform: uppercase; position: relative; }
+  .label input { position: absolute; inset: -8px; opacity: 0; width: calc(100% + 16px); }
+  .label.pick::after { content: " ▾"; color: var(--faint); }
+  .chip { font-size: 13px; color: var(--gold); border: 1px solid rgba(226,184,92,.35); border-radius: 999px; padding: 5px 11px; white-space: nowrap; }
+  .chip:active { background: var(--gold-soft); }
+  .chip:disabled { opacity: .5; }
+  .big { font-size: 52px; font-weight: 300; letter-spacing: -2px; line-height: 1.1; margin: 4px 0 6px; white-space: nowrap; }
+  .big small { font-size: 28px; color: var(--muted); letter-spacing: 0; }
+  .delta { font-size: 14px; color: var(--soft); min-height: 19px; }
+  .delta.up { color: var(--up); } .delta.down { color: var(--down); }
+  .kind { display: inline-flex; gap: 4px; margin-top: 12px; background: var(--card); border-radius: 10px; padding: 3px; }
+  .kind button { font-size: 13px; color: var(--muted); padding: 5px 10px; border-radius: 8px; }
+  .kind button[aria-pressed="true"] { background: var(--card2); color: var(--text); }
+  .period { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .period label { font-size: 12px; color: var(--muted); display: grid; gap: 5px; }
+  input[type=date], input[type=text] { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 12px; width: 100%; min-height: 46px; color-scheme: dark; }
 
-  .hero { background: var(--card); border-radius: var(--radius); padding: 16px 16px 14px; margin-top: 10px; }
-  .hero .total { font-size: 34px; font-weight: 700; letter-spacing: -.5px; }
-  .hero .sub { color: var(--hint); font-size: 14px; margin-top: 2px; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sep); border-radius: 10px; overflow: hidden; margin-top: 12px; }
-  .stats div { background: var(--card); padding: 8px 0 2px; }
-  .stats div + div { padding-left: 14px; }
-  .stats b { display: block; font-size: 17px; }
-  .stats span { color: var(--hint); font-size: 12px; }
+  /* панели */
+  .panel { background: var(--card); border-radius: 22px; padding: 14px 16px; margin-top: 12px; }
+  .panel h4 { margin: 0 0 6px; font-size: 14px; font-weight: 500; color: var(--soft); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .legend i { display: inline-block; width: 14px; height: 2px; margin-right: 6px; vertical-align: 3px; border-radius: 2px; }
+  .legend i.dash { background: repeating-linear-gradient(90deg, var(--faint) 0 4px, transparent 4px 7px); }
+  .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .stats3 b { display: block; font-size: 18px; font-weight: 500; }
+  .stats3 span { font-size: 11px; color: var(--muted); }
 
-  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .4px; color: var(--hint); font-weight: 500; margin: 20px 4px 6px; }
-  .list { background: var(--card); border-radius: var(--radius); overflow: hidden; }
-  .row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 14px; text-align: left; position: relative; }
-  .row + .row::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; border-top: 1px solid var(--sep); }
-  .row:active { background: var(--soft); }
+  .ring { display: flex; gap: 16px; align-items: center; }
+  .ring svg { flex: none; }
+  .ring .txt { font-size: 13px; color: var(--muted); }
+  .ring .txt b { display: block; color: var(--text); font-size: 17px; font-weight: 600; margin-bottom: 3px; }
+  .ring .txt em { font-style: normal; color: var(--gold); }
+
+  .chart { position: relative; touch-action: pan-y; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .tip { position: absolute; top: 0; background: #2a2d34; color: var(--text); font-size: 12px; padding: 6px 9px; border-radius: 10px;
+    pointer-events: none; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+  .tip b { color: var(--gold); font-weight: 600; }
+  .tip span { color: var(--muted); }
+
+  .rows { margin: 0 -16px -14px; }
+  .row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 16px; text-align: left; position: relative; }
+  .row + .row::before { content: ""; position: absolute; top: 0; left: 64px; right: 16px; border-top: 1px solid var(--line); }
+  .row:active { background: var(--card2); }
+  .badge { width: 38px; height: 38px; border-radius: 12px; background: var(--card2); display: grid; place-items: center; text-align: center;
+    line-height: 1; font-weight: 600; font-size: 15px; flex: none; }
+  .badge small { display: block; font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+  .badge.we small { color: var(--gold); }
   .row .main { flex: 1; min-width: 0; }
-  .row .main small { display: block; color: var(--hint); font-size: 13px; }
-  .row .amt { font-weight: 600; white-space: nowrap; }
-  .row .chev { color: var(--hint); font-size: 18px; margin-left: 2px; }
-  .row .bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--soft); z-index: 0; pointer-events: none; }
-  .row > *:not(.bar) { position: relative; z-index: 1; }
-  .row.muted .amt { color: var(--hint); font-weight: 400; }
-  .empty { padding: 22px 14px; color: var(--hint); text-align: center; font-size: 15px; }
-  .addrow { color: var(--accent); font-weight: 500; }
+  .row .main small { display: block; color: var(--muted); font-size: 12px; margin-top: 1px; }
+  .row .amt { font-weight: 500; }
+  .row .chev { color: var(--faint); font-size: 18px; }
+  .row.add { color: var(--gold); justify-content: center; font-weight: 500; }
+  .empty { color: var(--muted); text-align: center; padding: 18px 0 10px; font-size: 14px; }
 
-  .fab { position: fixed; left: 14px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); height: 50px;
-    border-radius: 12px; background: var(--btn); color: var(--btn-text); font-weight: 600; font-size: 16px; }
-  .fab:active { opacity: .85; }
+  .hrow { display: grid; grid-template-columns: 38px 1fr auto 10px; gap: 12px; align-items: center; padding: 9px 0; width: 100%; text-align: left; font-size: 14px; }
+  .hrow .m { color: var(--soft); }
+  .hrow .bars { display: grid; gap: 3px; }
+  .hrow .bar { height: 10px; border-radius: 0 5px 5px 0; background: var(--gold); min-width: 0; }
+  .hrow .ghost { height: 3px; border-radius: 0 3px 3px 0; background: #3b3d44; }
+  .hrow .s { text-align: right; }
+  .hrow .s small { display: block; font-size: 11px; color: var(--muted); }
+  .hrow .chev { color: var(--faint); }
+  .hrow.off .s { color: var(--faint); }
 
-  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: flex-end; z-index: 10; }
-  .sheet { background: var(--bg); width: 100%; border-radius: 16px 16px 0 0; padding: 16px 14px calc(16px + env(safe-area-inset-bottom, 0px));
-    animation: up .18s ease-out; }
-  @keyframes up { from { transform: translateY(30%); opacity: .4; } to { transform: none; opacity: 1; } }
-  .sheet h2 { margin: 0 0 12px; font-size: 18px; text-align: center; }
-  .sheet label { display: grid; gap: 4px; font-size: 13px; color: var(--hint); margin-bottom: 10px; }
-  .sheet input.amount { font-size: 26px; font-weight: 600; text-align: center; }
-  .sheet .warn { font-size: 13px; color: var(--danger); margin: -4px 2px 10px; }
-  .sheet .err { font-size: 13px; color: var(--danger); min-height: 18px; margin: -4px 2px 6px; }
-  .btns { display: grid; gap: 8px; }
-  .btn { height: 48px; border-radius: 12px; font-weight: 600; }
-  .btn.primary { background: var(--btn); color: var(--btn-text); }
-  .btn.ghost { background: var(--card); }
-  .btn.danger { background: var(--card); color: var(--danger); }
+  .fab { position: fixed; left: 16px; right: 16px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); height: 54px; border-radius: 18px;
+    background: var(--gold); color: var(--gold-ink); font-weight: 700; font-size: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.45); z-index: 5; }
+  .fab:active { filter: brightness(.92); }
+
+  /* окно записи */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; z-index: 10; }
+  .sheet { background: var(--card); width: 100%; border-radius: 24px 24px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px)); animation: up .2s ease-out; }
+  @keyframes up { from { transform: translateY(30%); opacity: .3; } to { transform: none; opacity: 1; } }
+  .sheet h2 { margin: 0 0 14px; font-size: 17px; font-weight: 600; text-align: center; }
+  .sheet label { display: grid; gap: 5px; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .sheet input { background: var(--bg); }
+  .sheet input.amount { font-size: 34px; font-weight: 300; text-align: center; letter-spacing: -1px; min-height: 64px; }
+  .sheet .warn, .sheet .err { font-size: 13px; color: var(--down); margin: -4px 2px 10px; min-height: 0; }
+  .btns { display: grid; gap: 8px; margin-top: 6px; }
+  .btn { height: 50px; border-radius: 16px; font-weight: 600; }
+  .btn.primary { background: var(--gold); color: var(--gold-ink); }
+  .btn.ghost { background: var(--card2); color: var(--soft); }
+  .btn.danger { background: var(--card2); color: var(--down); }
   .btn:disabled { opacity: .5; }
 
-  .toast { position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-    background: rgba(30,30,30,.92); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 20; max-width: 90vw; text-align: center; }
-  .notice { background: var(--card); border-radius: var(--radius); padding: 20px 16px; margin-top: 30px; text-align: center; }
-  .notice h2 { margin: 0 0 8px; font-size: 18px; }
-  .notice p { color: var(--hint); margin: 0; }
-  .loading { opacity: .55; transition: opacity .15s; }
-  [hidden] { display: none !important; }
+  .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: #2a2d34;
+    color: var(--text); padding: 11px 16px; border-radius: 14px; font-size: 14px; z-index: 20; max-width: 90vw; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+  .notice { background: var(--card); border-radius: 22px; padding: 24px 18px; margin-top: 40px; text-align: center; }
+  .notice h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+  .notice p { color: var(--muted); margin: 0; }
+  body.loading main { opacity: .5; transition: opacity .15s; }
+  .fade { animation: fade .25s ease-out; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
-<div id="app">
-  <div class="seg" id="modes" role="tablist">
-    <button data-mode="day" aria-pressed="true">День</button>
-    <button data-mode="month" aria-pressed="false">Месяц</button>
-    <button data-mode="year" aria-pressed="false">Год</button>
-    <button data-mode="range" aria-pressed="false">Период</button>
+<main id="app">
+  <div class="top">
+    <div class="tabs" id="modes">
+      <button data-mode="day" aria-pressed="true">День</button>
+      <button data-mode="month" aria-pressed="false">Месяц</button>
+      <button data-mode="year" aria-pressed="false">Год</button>
+      <button data-mode="range" aria-pressed="false">Период</button>
+    </div>
+    <div class="arrows" id="arrows">
+      <button id="prev" aria-label="Назад">‹</button>
+      <button id="next" aria-label="Вперёд">›</button>
+    </div>
   </div>
 
-  <div class="nav" id="nav">
-    <button class="arrow" id="prev" aria-label="Назад">‹</button>
-    <div class="label" id="navLabel"></div>
-    <button class="arrow" id="next" aria-label="Вперёд">›</button>
-  </div>
-  <div class="seg small" id="yearKind" hidden>
-    <button data-fiscal="1" aria-pressed="true">июнь – май</button>
-    <button data-fiscal="0" aria-pressed="false">январь – декабрь</button>
-  </div>
   <div class="period" id="period" hidden>
     <label>С <input type="date" id="from"></label>
     <label>По <input type="date" id="to"></label>
   </div>
 
-  <div class="hero" id="hero">
-    <div class="total num" id="total">—</div>
-    <div class="sub" id="sub">&nbsp;</div>
-    <div class="stats" id="stats" hidden>
-      <div><b class="num" id="avg">—</b><span>в среднем за рабочий день</span></div>
-      <div><b class="num" id="worked">—</b><span>рабочих дней</span></div>
+  <section class="hero">
+    <div class="label-row">
+      <div class="label" id="label"></div>
+      <button class="chip" id="excel" hidden>⤓ Excel</button>
     </div>
-  </div>
+    <div class="big num" id="big">—</div>
+    <div class="delta num" id="delta"></div>
+    <div class="kind" id="kind" hidden>
+      <button data-fiscal="1" aria-pressed="true">июнь – май</button>
+      <button data-fiscal="0" aria-pressed="false">январь – декабрь</button>
+    </div>
+  </section>
 
-  <h3 id="listTitle"></h3>
-  <div class="list" id="list"></div>
-</div>
+  <div id="body"></div>
+</main>
 
 <button class="fab" id="fab">+ Добавить запись</button>
 <div id="notice" hidden></div>
@@ -139,15 +181,16 @@
 (function () {
   'use strict';
   var tg = window.Telegram && window.Telegram.WebApp;
-  var params = new URLSearchParams(location.search);
-  var API = params.get('api') || '';
+  var API = new URLSearchParams(location.search).get('api') || '';
   var initData = tg ? tg.initData : '';
 
   var MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
   var MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   var WD = ['вс','пн','вт','ср','чт','пт','сб'];
+  var WD_FULL = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+  var GOLD = '#e2b85c', FAINT = '#5b5e66', LINE = '#23252b', MUTED = '#8b8a85';
 
-  // ---------- даты (строки YYYY-MM-DD, считаем в UTC, чтобы не мешали часовые пояса)
+  // ---------- даты: строки YYYY-MM-DD, арифметика в UTC
   function pad(n) { return String(n).padStart(2, '0'); }
   function iso(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
   function todayIso() { var d = new Date(); return iso(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
@@ -156,29 +199,22 @@
   function addDays(s, n) { var d = toDate(s); d.setUTCDate(d.getUTCDate() + n); return fromDate(d); }
   function addMonths(s, n) { var y = +s.slice(0, 4), m = +s.slice(5, 7) - 1 + n; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return iso(y, m + 1, 1); }
   function lastDay(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  function shiftYear(s, n) { var y = +s.slice(0, 4) + n, m = +s.slice(5, 7), d = Math.min(+s.slice(8, 10), lastDay(y, m)); return iso(y, m, d); }
   function fy(s) { var y = +s.slice(0, 4), m = +s.slice(5, 7); return m >= 6 ? y : y - 1; }
-  function human(s, withYear) { var d = toDate(s); return d.getUTCDate() + ' ' + MONTHS_GEN[d.getUTCMonth()] + (withYear ? ' ' + d.getUTCFullYear() : '') + ', ' + WD[d.getUTCDay()]; }
-  function short(s) { var d = toDate(s); return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear(); }
+  function wd(s) { return toDate(s).getUTCDay(); }
+  function short(s) { return s.slice(8, 10) + '.' + s.slice(5, 7) + '.' + s.slice(0, 4); }
   function eachDay(from, to, fn) { for (var s = from; s <= to; s = addDays(s, 1)) fn(s); }
-  function rub(n) { return Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' ') + ' ₽'; }
+  function fmt(n) { return Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' '); }
+  function rub(n) { return fmt(n) + ' ₽'; }
+  function kfmt(n) { return n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('ru-RU') + 'к' : fmt(n); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function plural(n, a, b, c) { n = Math.abs(n) % 100; var n1 = n % 10; if (n > 10 && n < 20) return c; if (n1 > 1 && n1 < 5) return b; if (n1 === 1) return a; return c; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   // ---------- состояние
   var today = todayIso();
-  var state = {
-    mode: 'day',
-    day: today,
-    month: today.slice(0, 8) + '01',
-    year: fy(today),          // начало учётного года (июнь) или календарный год
-    fiscal: true,
-    from: addDays(today, -29),
-    to: today,
-  };
-  var cache = {};             // iso -> [суммы]
-  var complex = {};           // iso -> true, если в ячейке «своя» формула
-  var loadedFY = {};          // год -> true | Promise
-  var knownYears = null;
+  var state = { mode: 'month', day: today, month: today.slice(0, 8) + '01', year: fy(today), fiscal: true, from: today.slice(0, 8) + '01', to: today };
+  var cache = {}, complex = {}, loadedFY = {}, knownYears = null;
 
   // ---------- API
   function api(action, body) {
@@ -187,21 +223,17 @@
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j.ok) {
-          var map = {
-            auth: 'Не удалось подтвердить вход. Закройте и откройте дневник заново из бота.',
-            forbidden: 'Это личный дневник.',
-            no_owner: 'Сначала напишите боту /start.',
-            bad_amount: 'Проверьте сумму.',
-          };
+          var map = { auth: 'Не удалось подтвердить вход. Закройте и откройте дневник заново.', forbidden: 'Это личный дневник.',
+            no_owner: 'Сначала напишите боту /start.', bad_amount: 'Проверьте сумму.', unknown_action: 'Обновите скрипт в таблице до новой версии.' };
           throw new Error(map[j.error] || j.error || 'Ошибка');
         }
         return j;
       });
   }
-
   function ensureFY(y) {
     if (loadedFY[y] === true) return Promise.resolve();
     if (loadedFY[y]) return loadedFY[y];
+    if (knownYears && knownYears.indexOf(y) < 0) { loadedFY[y] = true; return Promise.resolve(); }
     var p = api('range', { from: iso(y, 6, 1), to: iso(y + 1, 5, 31) }).then(function (r) {
       knownYears = r.years;
       eachDay(iso(y, 6, 1), iso(y + 1, 5, 31), function (s) { delete cache[s]; delete complex[s]; });
@@ -213,132 +245,264 @@
     return p;
   }
 
-  function ensureRange(from, to) {
-    var ys = [];
-    for (var y = fy(from); y <= fy(to); y++) ys.push(ensureFY(y));
-    return Promise.all(ys);
-  }
-
-  // ---------- текущий диапазон
-  function currentRange() {
-    switch (state.mode) {
-      case 'day': return { from: state.day, to: state.day };
-      case 'month': {
-        var y = +state.month.slice(0, 4), m = +state.month.slice(5, 7);
-        return { from: state.month, to: iso(y, m, lastDay(y, m)) };
-      }
-      case 'year':
-        return state.fiscal ? { from: iso(state.year, 6, 1), to: iso(state.year + 1, 5, 31) }
-                            : { from: iso(state.year, 1, 1), to: iso(state.year, 12, 31) };
-      default: {
-        var a = state.from <= state.to ? state.from : state.to, b = state.from <= state.to ? state.to : state.from;
-        return { from: a, to: b };
-      }
-    }
-  }
-
+  // ---------- расчёты
   function daySum(s) { return (cache[s] || []).reduce(function (a, b) { return a + b; }, 0); }
-
   function stats(from, to) {
-    var sum = 0, worked = 0, days = 0;
-    var end = to < today ? to : today;
-    eachDay(from, to, function (s) { var v = daySum(s); sum += v; if (v > 0) worked++; if (s <= end) days++; });
-    return { sum: sum, worked: worked, days: days, avg: worked ? sum / worked : 0 };
+    var sum = 0, worked = 0, best = 0, bestDay = null;
+    eachDay(from, to, function (s) { var v = daySum(s); sum += v; if (v > 0) worked++; if (v > best) { best = v; bestDay = s; } });
+    return { sum: sum, worked: worked, avg: worked ? sum / worked : 0, best: best, bestDay: bestDay };
+  }
+  function monthEnd(ms) { var y = +ms.slice(0, 4), m = +ms.slice(5, 7); return iso(y, m, lastDay(y, m)); }
+  function range() {
+    if (state.mode === 'day') return { from: state.day, to: state.day };
+    if (state.mode === 'month') return { from: state.month, to: monthEnd(state.month) };
+    if (state.mode === 'year') return state.fiscal ? { from: iso(state.year, 6, 1), to: iso(state.year + 1, 5, 31) } : { from: iso(state.year, 1, 1), to: iso(state.year, 12, 31) };
+    return state.from <= state.to ? { from: state.from, to: state.to } : { from: state.to, to: state.from };
+  }
+  /** средний месяц учётного года (только месяцы с доходом) */
+  function avgMonthOfFY(y) {
+    var sums = [];
+    for (var k = 0; k < 12; k++) { var ms = addMonths(iso(y, 6, 1), k); var s = stats(ms, monthEnd(ms)).sum; if (s > 0) sums.push(s); }
+    return sums.length ? sums.reduce(function (a, b) { return a + b; }, 0) / sums.length : 0;
+  }
+  /** прогноз на конец текущего месяца по темпу: средний рабочий день × оставшиеся дни × доля рабочих дней */
+  function forecast(ms) {
+    var end = monthEnd(ms);
+    if (!(today >= ms && today < end)) return null;
+    var tD = +today.slice(8, 10), dim = +end.slice(8, 10);
+    var elapsed = daySum(today) > 0 ? tD : tD - 1;
+    var st = stats(ms, addDays(ms, Math.max(elapsed, 1) - 1));
+    if (!st.worked || elapsed < 3) return null;
+    var left = dim - elapsed, rate = st.worked / elapsed, leftWork = Math.round(left * rate);
+    var value = stats(ms, end).sum + st.avg * left * rate;
+    return { value: Math.round(value / 100) * 100, perDay: st.avg, leftWork: leftWork, end: end };
+  }
+  function deltaText(cur, prev, label, labelGen) {
+    if (!prev) return { text: '', cls: '' };
+    var p = Math.round((cur / prev - 1) * 100);
+    if (Math.abs(p) < 1) return { text: '= столько же, сколько за ' + (labelGen || label), cls: '' };
+    return { text: (p > 0 ? '▲ ' : '▼ ') + Math.abs(p) + '% к ' + label, cls: p > 0 ? 'up' : 'down' };
   }
 
   // ---------- отрисовка
   var $ = function (id) { return document.getElementById(id); };
+  function setBig(n) { $('big').innerHTML = fmt(n) + '<small> ₽</small>'; }
+  function setDelta(d) { var el = $('delta'); el.textContent = d.text; el.className = 'delta num ' + (d.cls || ''); }
 
   function renderControls() {
     document.querySelectorAll('#modes button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)); });
-    document.querySelectorAll('#yearKind button').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.fiscal === '1') === state.fiscal)); });
-    $('nav').hidden = state.mode === 'range';
+    document.querySelectorAll('#kind button').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.fiscal === '1') === state.fiscal)); });
+    $('arrows').style.visibility = state.mode === 'range' ? 'hidden' : 'visible';
     $('period').hidden = state.mode !== 'range';
-    $('yearKind').hidden = state.mode !== 'year';
-    $('stats').hidden = state.mode === 'day';
-    var label = $('navLabel');
+    $('kind').hidden = state.mode !== 'year';
+    $('excel').hidden = state.mode === 'day';
+    var L = $('label'); L.className = 'label';
     if (state.mode === 'day') {
-      label.innerHTML = esc(human(state.day)) + '<small>' + (state.day === today ? 'сегодня' : state.day.slice(0, 4)) + '</small>' +
+      L.className = 'label pick';
+      L.innerHTML = esc(WD_FULL[wd(state.day)] + ', ' + (+state.day.slice(8, 10)) + ' ' + MONTHS_GEN[+state.day.slice(5, 7) - 1] + ' ' + state.day.slice(0, 4)) +
         '<input type="date" id="pickDay" value="' + state.day + '" aria-label="Выбрать дату">';
       $('pickDay').addEventListener('change', function (e) { if (e.target.value) { state.day = e.target.value; render(); } });
     } else if (state.mode === 'month') {
-      var m = +state.month.slice(5, 7);
-      label.innerHTML = esc(MONTHS[m - 1][0].toUpperCase() + MONTHS[m - 1].slice(1)) + '<small>' + state.month.slice(0, 4) + '</small>';
+      L.textContent = MONTHS[+state.month.slice(5, 7) - 1] + ' ' + state.month.slice(0, 4);
     } else if (state.mode === 'year') {
-      label.innerHTML = state.fiscal ? state.year + '/' + String(state.year + 1).slice(2) + '<small>июнь ' + state.year + ' – май ' + (state.year + 1) + '</small>'
-                                     : state.year + '<small>январь – декабрь</small>';
+      L.textContent = state.fiscal ? state.year + '/' + String(state.year + 1).slice(2) + ' · июнь – май' : state.year + ' · январь – декабрь';
+    } else {
+      L.textContent = short(range().from) + ' — ' + short(range().to);
     }
     $('from').value = state.from; $('to').value = state.to;
   }
 
-  function renderBody() {
-    var r = currentRange(), st = stats(r.from, r.to);
-    $('total').textContent = rub(st.sum);
-    var list = $('list'), html = '';
-
-    if (state.mode === 'day') {
-      var e = cache[state.day] || [];
-      $('sub').textContent = e.length > 1 ? e.length + ' ' + plural(e.length, 'поступление', 'поступления', 'поступлений') : (e.length ? 'одно поступление' : 'нет записей');
-      $('listTitle').textContent = 'Поступления';
-      e.forEach(function (v, i) {
-        html += '<button class="row" data-edit="' + i + '"><div class="main num">' + rub(v) + '<small>' + (complex[state.day] ? 'своя формула в ячейке' : (e.length > 1 ? 'поступление ' + (i + 1) : 'нажмите, чтобы изменить')) + '</small></div><span class="chev">›</span></button>';
-      });
-      html += '<button class="row addrow" data-add="1">+ Добавить поступление</button>';
-    } else if (state.mode === 'year') {
-      $('listTitle').textContent = 'По месяцам';
-      var months = [], start = state.fiscal ? iso(state.year, 6, 1) : iso(state.year, 1, 1);
-      for (var k = 0; k < 12; k++) {
-        var ms = addMonths(start, k), y = +ms.slice(0, 4), m = +ms.slice(5, 7);
-        months.push({ ms: ms, st: stats(ms, iso(y, m, lastDay(y, m))) });
-      }
-      var max = Math.max.apply(null, months.map(function (x) { return x.st.sum; }).concat([1]));
-      var best = months.filter(function (x) { return x.st.sum === max; })[0];
-      $('sub').textContent = best && best.st.sum ? 'лучший месяц — ' + MONTHS[+best.ms.slice(5, 7) - 1] + ', ' + rub(best.st.sum) : 'нет записей';
-      months.forEach(function (x) {
-        var m = +x.ms.slice(5, 7);
-        html += '<button class="row' + (x.st.sum ? '' : ' muted') + '" data-month="' + x.ms + '"><span class="bar" style="width:' + (x.st.sum / max * 100).toFixed(1) + '%"></span>' +
-          '<div class="main">' + MONTHS[m - 1][0].toUpperCase() + MONTHS[m - 1].slice(1) + ' ' + x.ms.slice(0, 4) +
-          '<small class="num">' + (x.st.worked ? 'сред. ' + rub(x.st.avg) + ' · ' + x.st.worked + ' ' + plural(x.st.worked, 'день', 'дня', 'дней') : 'нет записей') + '</small></div>' +
-          '<span class="amt num">' + rub(x.st.sum) + '</span><span class="chev">›</span></button>';
-      });
-    } else {
-      $('sub').textContent = state.mode === 'range' ? short(r.from) + ' — ' + short(r.to) : '';
-      $('listTitle').textContent = 'По дням';
-      var rows = [];
-      eachDay(r.from, r.to, function (s) { if (daySum(s) > 0) rows.push(s); });
-      rows.reverse().forEach(function (s) {
-        var e = cache[s];
-        html += '<button class="row" data-day="' + s + '"><div class="main">' + esc(human(s, state.mode === 'range')) +
-          (e.length > 1 ? '<small class="num">' + e.map(rub).join(' + ') + '</small>' : '') + '</div>' +
-          '<span class="amt num">' + rub(daySum(s)) + '</span><span class="chev">›</span></button>';
-      });
-      if (!rows.length) html = '<div class="empty">Нет записей за этот период</div>';
-    }
-
-    if (state.mode !== 'day') {
-      $('avg').textContent = st.worked ? rub(st.avg) : '—';
-      $('worked').textContent = st.worked + (st.days ? ' из ' + st.days : '');
-    }
-    if (knownYears && knownYears.indexOf(fy(r.to)) < 0 && knownYears.indexOf(fy(r.from)) < 0) {
-      html = '<div class="empty">В таблице ещё нет блока на ' + fy(r.from) + '/' + String(fy(r.from) + 1).slice(2) + ' год</div>';
-    }
-    list.innerHTML = html;
+  function dayRows(list, withYear) {
+    return list.map(function (s) {
+      var e = cache[s], w = wd(s);
+      return '<button class="row" data-day="' + s + '"><div class="badge' + (w === 0 || w === 6 ? ' we' : '') + '">' + (+s.slice(8, 10)) + '<small>' + WD[w] + '</small></div>' +
+        '<div class="main">' + (+s.slice(8, 10)) + ' ' + MONTHS_GEN[+s.slice(5, 7) - 1] + (withYear ? ' ' + s.slice(0, 4) : '') +
+        '<small class="num">' + (e.length > 1 ? e.map(rub).join(' + ') : '') + '</small></div>' +
+        '<span class="amt num">' + rub(daySum(s)) + '</span><span class="chev">›</span></button>';
+    }).join('');
   }
 
-  var renderSeq = 0;
+  function renderDay() {
+    var s = state.day, e = cache[s] || [];
+    setBig(daySum(s));
+    var ms = s.slice(0, 8) + '01', mst = stats(ms, monthEnd(ms));
+    var d = { text: '', cls: '' };
+    if (e.length && mst.worked > 1) {
+      var p = Math.round((daySum(s) / mst.avg - 1) * 100);
+      d = Math.abs(p) < 3 ? { text: 'как обычно в этом месяце', cls: '' } : { text: (p > 0 ? '▲ ' : '▼ ') + Math.abs(p) + '% к среднему дню месяца', cls: p > 0 ? 'up' : 'down' };
+    } else if (!e.length) d = { text: s > today ? 'этот день ещё впереди' : 'записей нет', cls: '' };
+    setDelta(d);
+    var rows = e.map(function (v, i) {
+      return '<button class="row" data-edit="' + i + '"><div class="badge">' + (i + 1) + '<small>₽</small></div><div class="main num">' + rub(v) +
+        '<small>' + (complex[s] ? 'своя формула в ячейке' : 'нажмите, чтобы изменить') + '</small></div><span class="chev">›</span></button>';
+    }).join('');
+    return '<div class="panel fade"><h4>Поступления</h4><div class="rows">' + rows + '<button class="row add" data-add="1">+ Добавить поступление</button></div></div>' +
+      '<div class="panel fade"><h4>' + cap(MONTHS[+ms.slice(5, 7) - 1]) + ' целиком <button class="chip" data-month="' + ms + '">Открыть месяц ›</button></h4>' +
+      '<div class="stats3"><div><b class="num">' + kfmt(mst.sum) + '</b><span>за месяц</span></div><div><b class="num">' + (mst.worked ? kfmt(mst.avg) : '—') + '</b><span>средний день</span></div>' +
+      '<div><b class="num">' + mst.worked + '</b><span>' + plural(mst.worked, 'рабочий день', 'рабочих дня', 'рабочих дней') + '</span></div></div></div>';
+  }
+
+  function ringSvg(done, proj) {
+    var R = 30, C = 2 * Math.PI * R, a = Math.min(1, done), b = Math.min(1, Math.max(done, proj || 0));
+    return '<svg width="84" height="84" viewBox="0 0 76 76" aria-hidden="true">' +
+      '<circle cx="38" cy="38" r="' + R + '" fill="none" stroke="#2a2c33" stroke-width="8"/>' +
+      (proj ? '<circle cx="38" cy="38" r="' + R + '" fill="none" stroke="' + GOLD + '" stroke-opacity=".3" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + (C * b).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 38 38)"/>' : '') +
+      '<circle cx="38" cy="38" r="' + R + '" fill="none" stroke="' + GOLD + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + (C * a).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 38 38)"/>' +
+      '<text x="38" y="43" text-anchor="middle" font-size="14" font-weight="600" fill="#f4f1ea">' + Math.round(done * 100) + '%</text></svg>';
+  }
+
+  var chartData = null;
+  function cumChart(ms, fc) {
+    var end = monthEnd(ms), dim = +end.slice(8, 10), py = shiftYear(ms, -1);
+    var cutoff = today < ms ? 0 : (today > end ? dim : +today.slice(8, 10));
+    var cur = [], prev = [], s1 = 0, s0 = 0;
+    for (var d = 1; d <= dim; d++) {
+      s1 += daySum(iso(+ms.slice(0, 4), +ms.slice(5, 7), d)); if (d <= cutoff) cur.push(s1);
+      var pd = iso(+py.slice(0, 4), +py.slice(5, 7), Math.min(d, lastDay(+py.slice(0, 4), +py.slice(5, 7)))); if (d <= lastDay(+py.slice(0, 4), +py.slice(5, 7))) { s0 += daySum(pd); prev.push(s0); }
+    }
+    var hasPrev = s0 > 0;
+    var W = 330, H = 130, max = Math.max(1, s1, hasPrev ? s0 : 0, fc ? fc.value : 0) * 1.05;
+    var X = function (i) { return dim > 1 ? i / (dim - 1) * W : 0; }, Y = function (v) { return H - v / max * H; };
+    var pts = function (a) { return a.map(function (v, i) { return X(i).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' '); };
+    var svg = '<svg viewBox="0 -6 ' + W + ' ' + (H + 26) + '" role="img" aria-label="Накопительный доход по дням месяца">';
+    [0.5, 1].forEach(function (f) { svg += '<line x1="0" x2="' + W + '" y1="' + Y(max / 1.05 * f) + '" y2="' + Y(max / 1.05 * f) + '" stroke="' + LINE + '"/>'; });
+    svg += '<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="' + GOLD + '" stop-opacity=".32"/><stop offset="1" stop-color="' + GOLD + '" stop-opacity="0"/></linearGradient></defs>';
+    if (hasPrev) svg += '<polyline points="' + pts(prev) + '" fill="none" stroke="' + FAINT + '" stroke-width="2" stroke-dasharray="5 5"/>';
+    if (cur.length) {
+      var lx = X(cur.length - 1), ly = Y(cur[cur.length - 1]);
+      svg += '<polygon points="0,' + H + ' ' + pts(cur) + ' ' + lx.toFixed(1) + ',' + H + '" fill="url(#g)"/>';
+      if (fc) svg += '<line x1="' + lx.toFixed(1) + '" y1="' + ly.toFixed(1) + '" x2="' + W + '" y2="' + Y(fc.value).toFixed(1) + '" stroke="' + GOLD + '" stroke-opacity=".55" stroke-width="2" stroke-dasharray="2 5" stroke-linecap="round"/>' +
+        '<circle cx="' + W + '" cy="' + Y(fc.value).toFixed(1) + '" r="3.5" fill="none" stroke="' + GOLD + '" stroke-opacity=".7" stroke-width="1.5"/>';
+      svg += '<polyline points="' + pts(cur) + '" fill="none" stroke="' + GOLD + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+      svg += '<circle cx="' + lx.toFixed(1) + '" cy="' + ly.toFixed(1) + '" r="5" fill="' + GOLD + '" stroke="#16181d" stroke-width="2"/>';
+    }
+    [1, 10, 20, dim].forEach(function (d) { svg += '<text x="' + X(d - 1).toFixed(1) + '" y="' + (H + 17) + '" text-anchor="' + (d === 1 ? 'start' : d === dim ? 'end' : 'middle') + '" font-size="10" fill="#6d6c68">' + d + '</text>'; });
+    svg += '<line id="xh" x1="0" x2="0" y1="0" y2="' + H + '" stroke="' + MUTED + '" stroke-width="1" visibility="hidden"/>';
+    svg += '</svg>';
+    chartData = { ms: ms, py: py, dim: dim, cur: cur, prev: hasPrev ? prev : null, W: W };
+    return '<div class="chart" id="chart">' + svg + '<div class="tip" id="tip" hidden></div></div>' +
+      '<div class="legend" style="margin-top:6px"><span><i style="background:' + GOLD + '"></i>' + cap(MONTHS[+ms.slice(5, 7) - 1]) + ' ' + ms.slice(0, 4) + '</span>' +
+      (hasPrev ? '<span><i class="dash"></i>' + py.slice(0, 4) + '</span>' : '') + (fc ? '<span><i style="background:' + GOLD + ';opacity:.45"></i>прогноз</span>' : '') + '</div>';
+  }
+
+  function renderMonth() {
+    var ms = state.month, end = monthEnd(ms), st = stats(ms, end), fc = forecast(ms);
+    setBig(st.sum);
+    var py = shiftYear(ms, -1), cutoffEnd = today >= ms && today < end ? today : end;
+    var prevSame = stats(py, shiftYear(cutoffEnd, -1)).sum;
+    var lbl = today >= ms && today < end ? '1–' + (+today.slice(8, 10)) + ' ' + MONTHS_GEN[+ms.slice(5, 7) - 1] + ' ' + py.slice(0, 4) : MONTHS[+ms.slice(5, 7) - 1] + ' ' + py.slice(0, 4);
+    setDelta(ms > today ? { text: 'месяц ещё не начался', cls: '' } : deltaText(st.sum, prevSame, lbl));
+
+    var html = '';
+    var avgPrev = avgMonthOfFY(fy(ms) - 1);
+    if (ms <= today && (avgPrev || fc)) {
+      var done = avgPrev ? st.sum / avgPrev : 0, proj = fc && avgPrev ? fc.value / avgPrev : 0;
+      var txt;
+      if (fc) {
+        txt = '<b class="num">Прогноз ≈ ' + rub(fc.value) + '</b>к ' + (+fc.end.slice(8, 10)) + ' ' + MONTHS_GEN[+ms.slice(5, 7) - 1] + ', если работать как сейчас: ~' + rub(fc.perDay) + ' × ещё ' + fc.leftWork + ' ' + plural(fc.leftWork, 'рабочий день', 'рабочих дня', 'рабочих дней') +
+          (avgPrev ? '<br><em>' + Math.round(proj * 100) + '%</em> от среднего месяца ' + (fy(ms) - 1) + '/' + String(fy(ms)).slice(2) + ' (' + rub(avgPrev) + ')' : '');
+      } else {
+        txt = '<b class="num">' + Math.round(done * 100) + '% от среднего месяца</b>средний месяц ' + (fy(ms) - 1) + '/' + String(fy(ms)).slice(2) + ' — ' + rub(avgPrev);
+      }
+      html += '<div class="panel ring fade">' + (avgPrev ? ringSvg(done, proj) : '') + '<div class="txt">' + txt + '</div></div>';
+    }
+    html += '<div class="panel fade"><h4>Накоплено за месяц</h4>' + cumChart(ms, fc) +
+      '<div class="stats3"><div><b class="num">' + (st.worked ? kfmt(st.avg) : '—') + '</b><span>в среднем/день</span></div>' +
+      '<div><b class="num">' + st.worked + '</b><span>' + plural(st.worked, 'рабочий день', 'рабочих дня', 'рабочих дней') + '</span></div>' +
+      '<div><b class="num">' + (st.best ? kfmt(st.best) : '—') + '</b><span>' + (st.bestDay ? 'лучший — ' + (+st.bestDay.slice(8, 10)) + ' ' + MONTHS_GEN[+ms.slice(5, 7) - 1].slice(0, 3) : 'лучший день') + '</span></div></div></div>';
+    var list = []; eachDay(ms, end, function (s) { if (daySum(s) > 0) list.push(s); });
+    html += '<div class="panel fade"><h4>По дням</h4>' + (list.length ? '<div class="rows">' + dayRows(list.reverse()) + '</div>' : '<div class="empty">Записей нет</div>') + '</div>';
+    return html;
+  }
+
+  function renderYear() {
+    var r = range(), st = stats(r.from, r.to);
+    setBig(st.sum);
+    var pFrom = shiftYear(r.from, -1), current = today >= r.from && today <= r.to;
+    var pTo = shiftYear(current ? today : r.to, -1);
+    var prev = stats(pFrom, pTo).sum;
+    var plabel = state.fiscal ? (state.year - 1) + '/' + String(state.year).slice(2) : String(state.year - 1);
+    setDelta(r.from > today ? { text: 'год ещё не начался', cls: '' } : deltaText(st.sum, prev, (current ? 'тому же периоду ' : '') + plabel, (current ? 'тот же период ' : '') + plabel));
+    var months = [];
+    for (var k = 0; k < 12; k++) {
+      var ms = addMonths(r.from, k), me = monthEnd(ms);
+      months.push({ ms: ms, st: stats(ms, me), pv: stats(shiftYear(ms, -1), monthEnd(shiftYear(ms, -1))).sum });
+    }
+    var max = Math.max.apply(null, months.map(function (m) { return Math.max(m.st.sum, m.pv); }).concat([1]));
+    var best = months.reduce(function (a, b) { return b.st.sum > a.st.sum ? b : a; }, months[0]);
+    var rows = months.map(function (m) {
+      var mi = +m.ms.slice(5, 7) - 1;
+      return '<button class="hrow' + (m.st.sum ? '' : ' off') + '" data-month="' + m.ms + '"><span class="m">' + cap(MONTHS[mi].slice(0, 3)) + '</span>' +
+        '<span class="bars"><span class="bar" style="width:' + (m.st.sum / max * 100).toFixed(1) + '%"></span><span class="ghost" style="width:' + (m.pv / max * 100).toFixed(1) + '%"></span></span>' +
+        '<span class="s num">' + (m.st.sum ? rub(m.st.sum) + '<small>' + m.st.worked + ' дн. · ' + kfmt(m.st.avg) + '/день</small>' : '—') + '</span><span class="chev">›</span></button>';
+    }).join('');
+    return '<div class="panel fade"><div class="stats3" style="margin-top:0">' +
+      '<div><b class="num">' + (st.worked ? kfmt(st.avg) : '—') + '</b><span>в среднем/день</span></div>' +
+      '<div><b class="num">' + st.worked + '</b><span>' + plural(st.worked, 'рабочий день', 'рабочих дня', 'рабочих дней') + '</span></div>' +
+      '<div><b class="num">' + (best.st.sum ? cap(MONTHS[+best.ms.slice(5, 7) - 1]) : '—') + '</b><span>лучший месяц</span></div></div></div>' +
+      '<div class="panel fade"><h4>По месяцам <span class="legend"><span><i style="background:' + GOLD + ';height:6px"></i>' + (state.fiscal ? state.year + '/' + String(state.year + 1).slice(2) : state.year) + '</span>' +
+      '<span><i style="background:#3b3d44;height:3px"></i>' + plabel + '</span></span></h4>' + rows + '</div>';
+  }
+
+  function renderRange() {
+    var r = range(), st = stats(r.from, r.to);
+    setBig(st.sum);
+    setDelta({ text: st.worked ? plural(st.worked, 'рабочий день', 'рабочих дня', 'рабочих дней').replace(/^/, st.worked + ' ') : 'записей нет', cls: '' });
+    var list = []; eachDay(r.from, r.to, function (s) { if (daySum(s) > 0) list.push(s); });
+    return '<div class="panel fade"><div class="stats3" style="margin-top:0">' +
+      '<div><b class="num">' + (st.worked ? kfmt(st.avg) : '—') + '</b><span>в среднем/день</span></div>' +
+      '<div><b class="num">' + st.worked + '</b><span>' + plural(st.worked, 'рабочий день', 'рабочих дня', 'рабочих дней') + '</span></div>' +
+      '<div><b class="num">' + (st.best ? kfmt(st.best) : '—') + '</b><span>лучший день</span></div></div></div>' +
+      '<div class="panel fade"><h4>По дням</h4>' + (list.length ? '<div class="rows">' + dayRows(list.reverse(), true) + '</div>' : '<div class="empty">Записей нет</div>') + '</div>';
+  }
+
+  function renderBody() {
+    var r = range();
+    var html = ({ day: renderDay, month: renderMonth, year: renderYear, range: renderRange })[state.mode]();
+    if (knownYears && knownYears.indexOf(fy(r.from)) < 0 && knownYears.indexOf(fy(r.to)) < 0) {
+      html = '<div class="panel"><div class="empty">В таблице нет блока на ' + fy(r.from) + '/' + String(fy(r.from) + 1).slice(2) + ' год</div></div>';
+    }
+    $('body').innerHTML = html;
+    bindChart();
+  }
+
+  var seq = 0;
   function render() {
     renderControls();
-    var r = currentRange(), seq = ++renderSeq;
-    var ready = true;
-    for (var y = fy(r.from); y <= fy(r.to); y++) if (loadedFY[y] !== true) ready = false;
-    if (ready) { renderBody(); return; }
+    var r = range(), need = [], s = ++seq;
+    for (var y = fy(r.from); y <= fy(r.to); y++) { need.push(y); if (state.mode !== 'range') need.push(y - 1); }
+    if (need.every(function (y) { return loadedFY[y] === true; })) { renderBody(); return; }
     document.body.classList.add('loading');
-    ensureRange(r.from, r.to).then(function () {
-      if (seq === renderSeq) { document.body.classList.remove('loading'); renderBody(); }
-    }).catch(function (e) {
-      document.body.classList.remove('loading');
-      toast(e.message);
-    });
+    // сначала текущие годы, потом прошлые (для сравнения)
+    var main = need.filter(function (y, i) { return state.mode === 'range' || i % 2 === 0; });
+    Promise.all(main.map(ensureFY)).then(function () { return Promise.all(need.map(ensureFY)); }).then(function () {
+      if (s === seq) { document.body.classList.remove('loading'); renderBody(); }
+    }).catch(function (e) { document.body.classList.remove('loading'); toast(e.message); });
+  }
+
+  // ---------- подсказка на графике
+  function bindChart() {
+    var el = $('chart'); if (!el || !chartData) return;
+    var svg = el.querySelector('svg'), tip = $('tip'), xh = svg.querySelector('#xh'), c = chartData;
+    function show(ev) {
+      var rect = svg.getBoundingClientRect();
+      var x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+      var i = Math.max(0, Math.min(c.dim - 1, Math.round(x / rect.width * (c.dim - 1))));
+      var d = iso(+c.ms.slice(0, 4), +c.ms.slice(5, 7), i + 1);
+      var vx = i / (c.dim - 1) * c.W; xh.setAttribute('x1', vx); xh.setAttribute('x2', vx); xh.setAttribute('visibility', 'visible');
+      var html = '<b>' + (i + 1) + ' ' + MONTHS_GEN[+c.ms.slice(5, 7) - 1] + '</b> · ' + (daySum(d) ? '+' + rub(daySum(d)) : 'без записей');
+      if (i < c.cur.length) html += '<br><span>с начала месяца:</span> ' + rub(c.cur[i]);
+      if (c.prev && i < c.prev.length) html += '<br><span>' + c.py.slice(0, 4) + ':</span> ' + rub(c.prev[i]);
+      tip.innerHTML = html; tip.hidden = false;
+      var px = vx / c.W * rect.width, tw = tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(rect.width - tw, px - tw / 2)) + 'px';
+    }
+    function hide() { tip.hidden = true; xh.setAttribute('visibility', 'hidden'); }
+    el.addEventListener('pointermove', show);
+    el.addEventListener('pointerdown', show);
+    el.addEventListener('touchmove', show, { passive: true });
+    el.addEventListener('pointerleave', hide);
+    el.addEventListener('touchend', function () { setTimeout(hide, 1500); });
   }
 
   // ---------- навигация
@@ -346,20 +510,20 @@
     if (state.mode === 'day') state.day = addDays(state.day, dir);
     else if (state.mode === 'month') state.month = addMonths(state.month, dir);
     else if (state.mode === 'year') state.year += dir;
-    haptic('selection');
-    render();
+    haptic('selection'); render();
   }
   $('prev').addEventListener('click', function () { shift(-1); });
   $('next').addEventListener('click', function () { shift(1); });
   document.querySelectorAll('#modes button').forEach(function (b) {
     b.addEventListener('click', function () {
-      var m = b.dataset.mode;
-      if (m === 'month' && state.mode === 'day') state.month = state.day.slice(0, 8) + '01';
-      if (m === 'year' && state.mode !== 'year') state.year = state.fiscal ? fy(state.mode === 'month' ? state.month : state.day) : +(state.mode === 'month' ? state.month : state.day).slice(0, 4);
+      var m = b.dataset.mode, ref = state.mode === 'day' ? state.day : state.mode === 'month' ? state.month : today;
+      if (m === 'month' && state.mode !== 'month') state.month = ref.slice(0, 8) + '01';
+      if (m === 'year' && state.mode !== 'year') state.year = state.fiscal ? fy(ref) : +ref.slice(0, 4);
+      if (m === 'range' && state.mode === 'month') { state.from = state.month; state.to = monthEnd(state.month) < today ? monthEnd(state.month) : today; }
       state.mode = m; haptic('selection'); render();
     });
   });
-  document.querySelectorAll('#yearKind button').forEach(function (b) {
+  document.querySelectorAll('#kind button').forEach(function (b) {
     b.addEventListener('click', function () {
       var f = b.dataset.fiscal === '1';
       if (f !== state.fiscal) { state.fiscal = f; state.year = f ? fy(today) : +today.slice(0, 4); render(); }
@@ -367,46 +531,47 @@
   });
   $('from').addEventListener('change', function (e) { if (e.target.value) { state.from = e.target.value; render(); } });
   $('to').addEventListener('change', function (e) { if (e.target.value) { state.to = e.target.value; render(); } });
-
-  $('list').addEventListener('click', function (ev) {
-    var b = ev.target.closest('button');
-    if (!b) return;
-    if (b.dataset.day) { state.day = b.dataset.day; state.mode = 'day'; render(); }
-    else if (b.dataset.month) { state.month = b.dataset.month; state.mode = 'month'; render(); }
+  $('body').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.day) { state.day = b.dataset.day; state.mode = 'day'; render(); window.scrollTo(0, 0); }
+    else if (b.dataset.month) { state.month = b.dataset.month; state.mode = 'month'; render(); window.scrollTo(0, 0); }
     else if (b.dataset.edit !== undefined) openSheet(state.day, +b.dataset.edit);
     else if (b.dataset.add) openSheet(state.day, null);
   });
   $('fab').addEventListener('click', function () { openSheet(state.mode === 'day' ? state.day : today, null); });
 
+  // ---------- выгрузка в Excel
+  $('excel').addEventListener('click', function () {
+    var r = range(), btn = $('excel');
+    btn.disabled = true; btn.textContent = 'Готовлю…';
+    api('export', { from: r.from, to: r.to }).then(function (res) {
+      haptic('success');
+      toast('📎 Файл отправлен в чат с ботом' + (res.rows ? ' · ' + res.rows + ' ' + plural(res.rows, 'день', 'дня', 'дней') : ''));
+    }).catch(function (e) { haptic('error'); toast(e.message); })
+      .then(function () { btn.disabled = false; btn.textContent = '⤓ Excel'; });
+  });
+
   // ---------- окно добавления / правки
   var sheetEl = null;
-  function closeSheet() {
-    if (sheetEl) { sheetEl.remove(); sheetEl = null; }
-    if (tg && tg.BackButton) tg.BackButton.hide();
-  }
+  function closeSheet() { if (sheetEl) { sheetEl.remove(); sheetEl = null; } if (tg && tg.BackButton) tg.BackButton.hide(); }
   function openSheet(date, index) {
     closeSheet();
     var editing = index !== null && index !== undefined;
-    var before = (cache[date] || []).slice();
-    var value = editing ? before[index] : '';
+    var before = (cache[date] || []).slice(), value = editing ? before[index] : '';
     var bg = document.createElement('div');
     bg.className = 'sheet-bg';
-    bg.innerHTML =
-      '<div class="sheet" role="dialog" aria-modal="true">' +
-        '<h2>' + (editing ? 'Изменить запись' : 'Новая запись') + '</h2>' +
-        '<label>Дата<input type="date" id="fDate" value="' + date + '"></label>' +
-        '<label>Сумма, ₽<input type="text" class="amount num" id="fAmount" inputmode="decimal" autocomplete="off" placeholder="0" value="' + (value ? String(value) : '') + '"></label>' +
-        (editing && complex[date] ? '<div class="warn">В этой ячейке своя формула — после сохранения вместо неё будет число.</div>' : '') +
-        '<div class="err" id="fErr"></div>' +
-        '<div class="btns">' +
-          '<button class="btn primary" id="fSave">Сохранить</button>' +
-          (editing ? '<button class="btn danger" id="fDel">Удалить</button>' : '') +
-          '<button class="btn ghost" id="fCancel">Отмена</button>' +
-        '</div>' +
-      '</div>';
+    bg.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' +
+      '<h2>' + (editing ? 'Изменить запись' : 'Новая запись') + '</h2>' +
+      '<label>Сумма, ₽<input type="text" class="amount num" id="fAmount" inputmode="decimal" autocomplete="off" placeholder="0" value="' + (value ? String(value) : '') + '"></label>' +
+      '<label>Дата<input type="date" id="fDate" value="' + date + '"></label>' +
+      (editing && complex[date] ? '<div class="warn">В ячейке своя формула — после сохранения вместо неё будет число.</div>' : '') +
+      '<div class="err" id="fErr"></div>' +
+      '<div class="btns"><button class="btn primary" id="fSave">Сохранить</button>' +
+      (editing ? '<button class="btn danger" id="fDel">Удалить</button>' : '') +
+      '<button class="btn ghost" id="fCancel">Отмена</button></div></div>';
     document.body.appendChild(bg);
     sheetEl = bg;
-    if (tg && tg.BackButton) { tg.BackButton.show(); }
+    if (tg && tg.BackButton) tg.BackButton.show();
     bg.addEventListener('click', function (e) { if (e.target === bg) closeSheet(); });
     $('fCancel').addEventListener('click', closeSheet);
     var amountEl = $('fAmount');
@@ -417,70 +582,43 @@
       var t = String(s).replace(/[\s ₽]/g, '');
       if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
       t = t.replace(',', '.');
-      var n = Number(t);
-      return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+      var n = Number(t); return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
     }
     function busy(on) { ['fSave', 'fDel', 'fCancel'].forEach(function (id) { var el = $(id); if (el) el.disabled = on; }); }
-    function done(res, msg, focusDate) {
-      apply(res);
-      closeSheet();
-      haptic('success');
-      toast(msg);
-      if (focusDate) { state.day = focusDate; if (state.mode === 'day') {} }
-      render();
-    }
+    function done(res, msg, focus) { apply(res); closeSheet(); haptic('success'); toast(msg); if (focus) state.day = focus; render(); }
     function fail(e) { busy(false); $('fErr').textContent = e.message; haptic('error'); }
-
     function save() {
-      var amount = parseAmount(amountEl.value);
-      var newDate = $('fDate').value;
+      var amount = parseAmount(amountEl.value), newDate = $('fDate').value;
       if (!amount) { $('fErr').textContent = 'Введите сумму больше нуля'; amountEl.focus(); return; }
       if (!newDate) { $('fErr').textContent = 'Выберите дату'; return; }
       busy(true);
-      var p = editing
-        ? api('update', { date: date, index: index, amount: amount, newDate: newDate, expect: before })
-        : api('add', { date: newDate, amount: amount });
-      p.then(function (res) {
-        if (res.conflict) { apply(res); busy(false); render(); $('fErr').textContent = 'Пока вы редактировали, запись изменилась. Проверьте и сохраните ещё раз.'; return; }
-        done(res, (editing ? 'Сохранено: ' : 'Добавлено: ') + rub(amount) + ' · ' + short(newDate), newDate);
-      }).catch(fail);
+      (editing ? api('update', { date: date, index: index, amount: amount, newDate: newDate, expect: before }) : api('add', { date: newDate, amount: amount }))
+        .then(function (res) {
+          if (res.conflict) { apply(res); busy(false); render(); $('fErr').textContent = 'Пока вы редактировали, запись изменилась. Проверьте и сохраните ещё раз.'; return; }
+          done(res, (editing ? 'Сохранено: ' : 'Добавлено: ') + rub(amount) + ' · ' + short(newDate), newDate);
+        }).catch(fail);
     }
     $('fSave').addEventListener('click', save);
-    if (editing) {
-      $('fDel').addEventListener('click', function () {
-        busy(true);
-        api('delete', { date: date, index: index, expect: before }).then(function (res) {
-          if (res.conflict) { apply(res); busy(false); render(); $('fErr').textContent = 'Запись уже изменилась — проверьте список.'; return; }
-          done(res, 'Удалено: ' + rub(value));
-        }).catch(fail);
-      });
-    }
+    if (editing) $('fDel').addEventListener('click', function () {
+      busy(true);
+      api('delete', { date: date, index: index, expect: before }).then(function (res) {
+        if (res.conflict) { apply(res); busy(false); render(); $('fErr').textContent = 'Запись уже изменилась — проверьте список.'; return; }
+        done(res, 'Удалено: ' + rub(value));
+      }).catch(fail);
+    });
   }
-
-  function applyDay(d) {
-    if (!d || !d.date) return;
-    if (d.entries && d.entries.length) cache[d.date] = d.entries; else delete cache[d.date];
-    delete complex[d.date];
-  }
-  function apply(res) {
-    if (res.moved) { applyDay(res.from); applyDay(res.to); } else applyDay(res);
-  }
+  function applyDay(d) { if (!d || !d.date) return; if (d.entries && d.entries.length) cache[d.date] = d.entries; else delete cache[d.date]; delete complex[d.date]; }
+  function apply(res) { if (res.moved) { applyDay(res.from); applyDay(res.to); } else applyDay(res); }
 
   // ---------- мелочи
   var toastTimer;
   function toast(text) {
     var el = document.querySelector('.toast');
     if (!el) { el = document.createElement('div'); el.className = 'toast'; document.body.appendChild(el); }
-    el.textContent = text;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.remove(); }, 2600);
+    el.textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.remove(); }, 2800);
   }
   function haptic(kind) {
-    try {
-      if (!tg || !tg.HapticFeedback) return;
-      if (kind === 'selection') tg.HapticFeedback.selectionChanged();
-      else tg.HapticFeedback.notificationOccurred(kind);
-    } catch (e) {}
+    try { if (!tg || !tg.HapticFeedback) return; if (kind === 'selection') tg.HapticFeedback.selectionChanged(); else tg.HapticFeedback.notificationOccurred(kind); } catch (e) {}
   }
   function notice(title, text) {
     $('app').hidden = true; $('fab').hidden = true;
@@ -490,8 +628,8 @@
 
   // ---------- старт
   if (tg) {
-    tg.ready();
-    tg.expand();
+    tg.ready(); tg.expand();
+    try { tg.setHeaderColor('#0d0e12'); tg.setBackgroundColor('#0d0e12'); if (tg.setBottomBarColor) tg.setBottomBarColor('#0d0e12'); } catch (e) {}
     if (tg.BackButton) tg.BackButton.onClick(closeSheet);
     if (tg.onEvent) tg.onEvent('activated', function () { loadedFY = {}; render(); });
   }
